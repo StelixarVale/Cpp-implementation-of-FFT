@@ -83,8 +83,3 @@ MatrixXcd Y3 = FFTLibrary::fft(X, 8, 2);
 
 ---
 
-## 验证结果示例
-
-![1737369745496](image/README/1737369745496.png)
-
-![1737369717647](image/README/1737369717647.png)
