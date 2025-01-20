@@ -16,7 +16,9 @@ find_package(Eigen3 3.4 REQUIRED NO_MODULE)
 
 message(STATUS "Eigen3版本: ${EIGEN3_VERSION_STRING}")
 
-add_executable(Cpp_implementation_of_FFT main.cpp fft.cpp)
+add_executable(Cpp_implementation_of_FFT main.cpp fft.cpp
+        fft.h
+        fft.cpp)
 
 # 链接Eigen库
 target_link_libraries(Cpp_implementation_of_FFT PRIVATE Eigen3::Eigen)
