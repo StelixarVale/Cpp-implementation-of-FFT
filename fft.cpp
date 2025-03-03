@@ -1,11 +1,7 @@
 /**
- * @file fft.cpp
- * @brief 快速傅里叶变换(FFT)算法的实现文件
- *
  * 本文件实现了FFT算法的核心功能。
  * 采用分治法（Divide and Conquer）的思想，通过递归方式实现FFT。
  */
-
 #define _USE_MATH_DEFINES
 #include "fft.h"
 #include <stdexcept>
@@ -77,6 +73,44 @@ namespace FFTLibrary {
 
             return result;
         }
+        VectorXcd ifft_impl(const VectorXcd& x) {
+            int n = x.size();
+
+            // 基本情况：长度为1时直接返回
+            if (n == 1) {
+                return x;
+            }
+
+            // 将输入序列分为偶数项和奇数项
+            VectorXcd even(n/2);
+            VectorXcd odd(n/2);
+            for (int i = 0; i < n/2; i++) {
+                even[i] = x[2*i];      // 偶数位置的元素
+                odd[i] = x[2*i + 1];   // 奇数位置的元素
+            }
+
+            // 递归计算偶数项和奇数项的FFT
+            VectorXcd even_fft = ifft_impl(even);
+            VectorXcd odd_fft = ifft_impl(odd);
+
+            // 使用蝶形运算合并结果
+            VectorXcd result(n);
+            for (int k = 0; k < n/2; k++) {
+                // 计算旋转因子 W_n^k = e^(2πik/n)
+                double angle = 2.0 * M_PI * k / n;
+                complex<double> t = polar(1.0, angle) * odd_fft[k];
+
+                // 蝶形运算的合并步骤
+                result[k] = even_fft[k] + t;                // 前半部分
+                result[k + n/2] = even_fft[k] - t;         // 后半部分
+            }
+            //归一化
+            for(int i =0 ; i < n; i++){
+                result[i]/=n;
+            }
+
+            return result;
+        }
     }
 
     MatrixXcd fft(const MatrixXcd& X) {
@@ -113,39 +147,78 @@ namespace FFTLibrary {
             Y.resize(n, X.cols());
             for (int i = 0; i < X.cols(); i++) {
                 // 提取每一列
-                VectorXcd col(X.rows());
-                for (int j = 0; j < X.rows(); j++) {
-                    col[j] = X(j, i);
-                }
-
+                VectorXcd col = X.col(i);
                 // 调整长度并计算FFT
                 col = detail::pad_or_truncate(col, n);
-                auto col_fft = detail::fft_impl(col);
-
-                // 将结果存回矩阵
-                for (int j = 0; j < n; j++) {
-                    Y(j, i) = col_fft[j];
-                }
+                VectorXcd col_fft = detail::fft_impl(col);
+                Y.col(i) = col_fft;
             }
         } else {  // 对行进行FFT
             Y.resize(X.rows(), n);
             for (int i = 0; i < X.rows(); i++) {
                 // 提取每一行
-                VectorXcd row(X.cols());
-                for (int j = 0; j < X.cols(); j++) {
-                    row[j] = X(i, j);
-                }
-
+                VectorXcd row = X.row(i);
                 // 调整长度并计算FFT
                 row = detail::pad_or_truncate(row, n);
-                auto row_fft = detail::fft_impl(row);
-
-                // 将结果存回矩阵
-                for (int j = 0; j < n; j++) {
-                    Y(i, j) = row_fft[j];
-                }
+                VectorXcd row_fft = detail::fft_impl(row);
+                Y.row(i) = row_fft;
             }
         }
         return Y;
     }
+
+    MatrixXcd ifft(const MatrixXcd& X) {
+        if (X.size() == 0) {
+            return X;  // 空矩阵直接返回
+        }
+
+        // 对矩阵的每一列进行FFT，长度自动补充到2的幂
+        int n = detail::next_power_of_two(X.rows());
+        return ifft(X, n, 1);  // 调用第三个重载版本
+    }
+
+    MatrixXcd ifft(const MatrixXcd& X, int n) {
+        if (X.size() == 0) {
+            return X;
+        }
+
+        // 对矩阵的每一列进行n点FFT
+        return ifft(X, n, 1);
+    }
+
+    MatrixXcd ifft(const MatrixXcd& X, int n, int dim) {
+        if (X.size() == 0) {
+            return X;
+        }
+
+        // 检查维度参数的有效性
+        if (dim != 1 && dim != 2) {
+            throw invalid_argument("维度参数必须为1或2");
+        }
+
+        MatrixXcd Y;
+        if (dim == 1) {  // 对列进行FFT
+            Y.resize(n, X.cols());
+            for (int i = 0; i < X.cols(); i++) {
+                // 提取每一列
+                VectorXcd col = X.col(i);
+                // 调整长度并计算FFT
+                col = detail::pad_or_truncate(col, n);
+                VectorXcd col_fft = detail::ifft_impl(col);
+                Y.col(i) = col_fft;
+            }
+        } else {  // 对行进行FFT
+            Y.resize(X.rows(), n);
+            for (int i = 0; i < X.rows(); i++) {
+                // 提取每一行
+                VectorXcd row = X.row(i);
+                // 调整长度并计算FFT
+                row = detail::pad_or_truncate(row, n);
+                VectorXcd row_fft = detail::ifft_impl(row);
+                Y.row(i) = row_fft;
+            }
+        }
+        return Y;
+    }
+
 }
