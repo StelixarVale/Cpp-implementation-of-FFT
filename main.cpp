@@ -1,16 +1,3 @@
-/**
- * @file main.cpp
- * @brief FFT
- * 包含了三种不同的FFT变换方式的示例：
- * 1. 基本FFT变换
- * 2. 指定长度的FFT变换
- * 3. 指定维度的FFT变换
- */
-
-#include <iostream>
-#include <complex>
-#include <Eigen/Dense>
-#include <Eigen/Core>
 #include "fft.h"
 
 using namespace std;
