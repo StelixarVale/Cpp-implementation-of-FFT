@@ -15,7 +15,8 @@ message(STATUS "Eigen3版本: ${EIGEN3_VERSION_STRING}")
 
 add_executable(Cpp_implementation_of_FFT 
                 main.cpp
-                fft.cpp)
+                fft.cpp
+                conv.cpp)
 
 # 链接Eigen库
 target_link_libraries(Cpp_implementation_of_FFT PRIVATE Eigen3::Eigen)
